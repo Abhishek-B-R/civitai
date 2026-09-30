@@ -162,6 +162,14 @@ export function humaniseScopeInvocation(scope: string, endpoint?: string): strin
   if (endpoint === '/api/v1/blocks/user-checkpoint/set')
     return 'Saved your checkpoint choice (API)';
   if (endpoint === 'user-settings:write') return 'Saved your block settings';
+  // The public catalog reads also declare no `requiredScope`, so without these
+  // arms they render the same `(any-token)` sentinel. They write no row of their
+  // own, so there is no '(API)' pairing to disambiguate.
+  if (endpoint === '/api/v1/blocks/images') return 'Read the image catalog';
+  if (endpoint === '/api/v1/blocks/models') return 'Read the model catalog';
+  if (endpoint === '/api/v1/blocks/tools') return 'Used chat tools';
+  if (endpoint === '/api/v1/blocks/generation-resources') return 'Read generation resources';
+  if (endpoint === '/api/v1/blocks/gated-images') return 'Read moderated images';
   // Prefix (not `===`) so BOTH the bounded template written today
   // (`storage:set`) and the historical per-key value (`storage:set:<key>`)
   // resolve to the same label.

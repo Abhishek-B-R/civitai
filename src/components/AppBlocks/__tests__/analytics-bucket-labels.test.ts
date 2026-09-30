@@ -1,4 +1,4 @@
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
@@ -347,6 +347,75 @@ describe('the Activity panel labellers cannot serve an aggregate card', () => {
     );
     expect(humaniseScopeInvocation('apps:storage:write', `${base}/delete`)).not.toBe(
       humaniseScopeInvocation('apps:storage:write', 'storage:delete')
+    );
+  });
+
+  it('every no-scope block REST route on disk renders a real label, never `(any-token)`', () => {
+    // A route wrapped in `withBlockScope` with no `requiredScope` records the
+    // `(any-token)` sentinel as its audit scope, which is in neither label map, so a
+    // missing arm renders that sentinel in the viewer's Action column (#5094).
+    const root = path.resolve(__dirname, '../../../..', 'src/pages/api/v1/blocks');
+    const collect = (d: string, prefix = ''): { rel: string; file: string }[] =>
+      readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+        if (e.isDirectory()) {
+          if (e.name === '__tests__') return [];
+          return collect(path.join(d, e.name), prefix ? `${prefix}/${e.name}` : e.name);
+        }
+        if (!/\.(t|j)sx?$/.test(e.name)) return [];
+        if (/\.test\.(t|j)sx?$/.test(e.name) || e.name.endsWith('.d.ts')) return [];
+        const stem = e.name.replace(/\.(t|j)sx?$/, '');
+        const rel = stem === 'index' ? prefix : prefix ? `${prefix}/${stem}` : stem;
+        return rel ? [{ rel, file: path.join(d, e.name) }] : [];
+      });
+    // Comment lines are dropped first: several of these routes explain themselves
+    // with a `// No requiredScope: ...` line, which would otherwise read as a declaration.
+    const declaresScope = (source: string) =>
+      /requiredScope\s*:/.test(
+        source
+          .split('\n')
+          .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+          .join('\n')
+      );
+    const noScopeRoutes = collect(root)
+      .filter(({ file }) => {
+        const source = readFileSync(file, 'utf8');
+        return source.includes('withBlockScope(') && !declaresScope(source);
+      })
+      .map(({ rel }) => rel);
+
+    // Positive control, so a wrong root or a broken predicate cannot pass vacuously.
+    expect(noScopeRoutes).toEqual(
+      expect.arrayContaining([
+        'images',
+        'models',
+        'tools',
+        'generation-resources',
+        'gated-images',
+        'user-checkpoint/set',
+      ])
+    );
+    // And the predicate does not sweep in scoped routes.
+    expect(noScopeRoutes).not.toContain('me');
+    expect(noScopeRoutes).not.toContain('app-storage/set');
+
+    for (const rel of noScopeRoutes) {
+      const label = humaniseScopeInvocation('(any-token)', `/api/v1/blocks/${rel}`);
+      expect(label, `${rel} renders the raw sentinel`).not.toBe('(any-token)');
+      expect(label, `${rel} renders an empty label`).not.toBe('');
+    }
+
+    expect(humaniseScopeInvocation('(any-token)', '/api/v1/blocks/images')).toBe(
+      'Read the image catalog'
+    );
+    expect(humaniseScopeInvocation('(any-token)', '/api/v1/blocks/models')).toBe(
+      'Read the model catalog'
+    );
+    expect(humaniseScopeInvocation('(any-token)', '/api/v1/blocks/tools')).toBe('Used chat tools');
+    expect(humaniseScopeInvocation('(any-token)', '/api/v1/blocks/generation-resources')).toBe(
+      'Read generation resources'
+    );
+    expect(humaniseScopeInvocation('(any-token)', '/api/v1/blocks/gated-images')).toBe(
+      'Read moderated images'
     );
   });
 
