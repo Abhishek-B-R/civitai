@@ -67,7 +67,7 @@ import {
   TagTarget,
 } from '~/shared/utils/prisma/enums';
 import type { BountyGetById } from '~/types/router';
-import { dateWithoutTimezone, stripTime } from '~/utils/date-helpers';
+import { dateWithoutTimezone } from '~/utils/date-helpers';
 import { numberWithCommas } from '~/utils/number-helpers';
 import { getDisplayName } from '~/utils/string-helpers';
 import { isDefined } from '~/utils/type-guards';
@@ -77,6 +77,7 @@ import { ContentPolicyLink } from '../ContentPolicyLink/ContentPolicyLink';
 import { CurrencyIcon } from '../Currency/CurrencyIcon';
 import { DaysFromNow } from '../Dates/DaysFromNow';
 import { InfoPopover } from '../InfoPopover/InfoPopover';
+import { toBountyDateString } from './bounty-dates';
 import { getMinMaxDates, useMutateBounty } from './bounty.utils';
 import { ReadOnlyAlert } from '~/components/ReadOnlyAlert/ReadOnlyAlert';
 import { useFeatureFlags } from '~/providers/FeatureFlagsProvider';
@@ -273,8 +274,8 @@ export function BountyUpsertForm({ bounty }: { bounty?: BountyGetById }) {
           ...bounty,
           ...rest,
           buzzType: mainBuzzType as 'green' | 'yellow',
-          startsAt: stripTime(startsAt),
-          expiresAt: stripTime(expiresAt),
+          startsAt: toBountyDateString(startsAt),
+          expiresAt: toBountyDateString(expiresAt),
           images: filteredImages,
         });
 
@@ -584,7 +585,7 @@ export function BountyUpsertForm({ bounty }: { bounty?: BountyGetById }) {
                       <Text fw={590}>
                         With the selected dates, your bounty will expire{' '}
                         <Text fw="bold" c="red.5" span>
-                          <DaysFromNow date={stripTime(expiresAt)} inUtc />
+                          <DaysFromNow date={toBountyDateString(expiresAt)} inUtc />
                         </Text>
                         . All times are in{' '}
                         <Text fw="bold" c="red.5" span>
