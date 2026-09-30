@@ -27,9 +27,9 @@ export function nextUtcMidnight(now: Date) {
 /**
  * The date pickers hold a LOCAL date whose calendar day is read as the UTC one.
  *
- * 🔴 Convert by calendar fields, never by `toDisplayUTC`/`fromDisplayUTC`. Those
- * shift by `getTimezoneOffset()` taken at two different instants, so they are not
- * inverses across a DST boundary — and against a 00:00 UTC target an hour of slip
+ * 🔴 Convert by calendar fields, never by shifting with `getTimezoneOffset()`. The
+ * offset is taken at two different instants, so the shifts are not inverses
+ * across a DST boundary, and against a 00:00 UTC target an hour of slip
  * is a whole day. Measured with real `Intl` offsets: Australia/Sydney turns
  * 2026-10-04 into 2026-10-03, Pacific/Auckland 2026-09-27 into 2026-09-26,
  * America/Santiago 2026-04-05 into 2026-04-04, Asia/Beirut 2026-03-29 into

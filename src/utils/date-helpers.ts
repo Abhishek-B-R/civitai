@@ -107,11 +107,32 @@ export function secondsAsMinutes(seconds: number) {
 
 // UTC display helpers: Mantine's DateTimePicker only works in local time.
 // We shift dates so the picker *displays* UTC values, then reverse on submit.
+// Copy calendar fields rather than adding getTimezoneOffset(): the offset is read at
+// two different instants, so near a DST change the display is an hour off and the
+// round trip moves the date.
 export function toDisplayUTC(date: Date): Date {
-  return new Date(date.getTime() + date.getTimezoneOffset() * 60_000);
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds()
+  );
 }
 export function fromDisplayUTC(date: Date): Date {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds()
+    )
+  );
 }
 
 export function dateWithoutTimezone(date: Date) {
